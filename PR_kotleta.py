@@ -2,7 +2,7 @@ import discord
 import psycopg2
 from discord.ext import commands, tasks
 import os
-#FIRKA was here.
+# FIRKA was here.
 
 def loadConfig(config_name, params=[]):
     import configparser
@@ -19,7 +19,7 @@ def loadConfig(config_name, params=[]):
     return output
 
 
-bot_config = loadConfig("bot", ["TOKEN", "GUILD", "CHANNEL"])
+bot_config = loadConfig("bot", ["TOKEN", "GUILD", "CHANNEL", "CHECK_DELAY", "BOT_CHANNEL"])
 db_config = loadConfig("database", ["dbname", "user", "password"])
 
 TOKEN = bot_config['TOKEN']
@@ -44,7 +44,12 @@ async def get_stats():
     cursor.close()
     conn.close()
     if a:
-        send_message = (f'Time: {d}. Map: {a}. Game mode: {b}. Players online: {c}')
+        send_message = ('------------------------\n'
+                        f'Time: {d}. \n'                        
+                        f'Map: {a}. \n'
+                        f'Game mode: {b}. \n'
+                        f'Players online: {c} \n'
+                        '------------------------')
         await bot.get_channel(int(bot_config['CHANNEL'])).send(send_message)
 
 
@@ -58,18 +63,33 @@ async def on_ready():
     print('Kotleta ready to kill')
 
 
-@tasks.loop(minutes=15)
+@bot.event
+async def on_message(message):
+    if message.author == bot.user:
+        return
+
+    if str(message.channel) == str(bot_config['BOT_CHANNEL']) and not message.content.startswith("!"):
+        await message.delete()
+
+    try:
+        await bot.process_commands(message)
+    except:
+        await message.delete()
+
+@tasks.loop(minutes=int(bot_config['CHECK_DELAY']))
 async def stats_refresh():
     bot.loop.create_task(get_stats())
 
 
 @bot.command(pass_context=True)
-async def repeat(ctx, arg):
+async def repeat(ctx, *, arg:str):
+    await ctx.message.delete()
     await ctx.send(arg)
 
 
 @bot.command(pass_context=True)
 async def stats(ctx):
+    await ctx.message.delete()
     await get_stats()
 
 
