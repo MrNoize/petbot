@@ -69,17 +69,19 @@ async def on_ready():
 async def on_message(message):
     if message.author == bot.user:
         return
+    if str(message.channel) == str(bot_config['BOT_CHANNEL']):
+        if not message.content.startswith("!"):
+            await message.delete()
+            return
 
-    if str(message.channel) == str(bot_config['BOT_CHANNEL']) and not message.content.startswith("!"):
-        await message.delete()
-        return
-    if not message.content.split()[0][1:] in bot.all_commands:
-        await message.delete()
-        return
-    try:
-        await bot.process_commands(message)
-    except:
-        await message.delete()
+        elif not message.content.split()[0][1:] in bot.all_commands:
+            await message.delete()
+            return
+
+        try:
+            await bot.process_commands(message)
+        except:
+            await message.delete()
 
 
 @tasks.loop(minutes=int(bot_config['CHECK_DELAY']))
