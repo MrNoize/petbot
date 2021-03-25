@@ -9,9 +9,15 @@ GUILD = ID дискорд сервера
 
 CHANNEL = ID канала
 
+CHECK_DELAY = время между проверками в минутах
+
+BOT_CHANNEL = Название канала для бота
+
 [database]
 
 dbname = Название бд
+
+tablename = название таблицы в БД
 
 user = 
 
