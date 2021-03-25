@@ -4,6 +4,7 @@ from discord.ext import commands, tasks
 import os
 # FIRKA was here.
 
+
 def loadConfig(config_name, params=[]):
     import configparser
     configs = configparser.ConfigParser()
@@ -21,11 +22,12 @@ def loadConfig(config_name, params=[]):
 
 bot_config = loadConfig("bot", ["TOKEN", "GUILD", "CHANNEL", "CHECK_DELAY", "BOT_CHANNEL"])
 db_config = loadConfig("database", ["dbname", "user", "password"])
-
 TOKEN = bot_config['TOKEN']
 GUILD = os.getenv(bot_config['GUILD'])
 bot = commands.Bot(command_prefix='!')
 client = discord.Client()
+
+bot.remove_command('help')
 
 
 async def get_stats():
@@ -70,21 +72,25 @@ async def on_message(message):
 
     if str(message.channel) == str(bot_config['BOT_CHANNEL']) and not message.content.startswith("!"):
         await message.delete()
-
+        return
+    if not message.content.split()[0][1:] in bot.all_commands:
+        await message.delete()
+        return
     try:
         await bot.process_commands(message)
     except:
         await message.delete()
+
 
 @tasks.loop(minutes=int(bot_config['CHECK_DELAY']))
 async def stats_refresh():
     bot.loop.create_task(get_stats())
 
 
-@bot.command(pass_context=True)
-async def repeat(ctx, *, arg:str):
-    await ctx.message.delete()
-    await ctx.send(arg)
+# @bot.command(pass_context=True)
+# async def repeat(ctx, *, arg:str):
+#     await ctx.message.delete()
+#     await ctx.send(arg)
 
 
 @bot.command(pass_context=True)
