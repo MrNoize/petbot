@@ -8,7 +8,7 @@ import os
 def loadConfig(config_name, params=[]):
     import configparser
     configs = configparser.ConfigParser()
-    configs.read('config.ini')
+    configs.read('../config.ini')
     output = {}
 
     for param in params:
@@ -56,7 +56,7 @@ async def get_stats():
 
 
 async def auto_refresh():
-    os.system('python prinfo.py')
+    os.system('python ../stats/prinfo.py')
 
 
 @bot.event
