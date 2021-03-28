@@ -89,12 +89,6 @@ async def stats_refresh():
     bot.loop.create_task(get_stats())
 
 
-# @bot.command(pass_context=True)
-# async def repeat(ctx, *, arg:str):
-#     await ctx.message.delete()
-#     await ctx.send(arg)
-
-
 @bot.command(pass_context=True)
 async def stats(ctx):
     await ctx.message.delete()

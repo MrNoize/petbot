@@ -59,7 +59,7 @@ else:
 
     cursor.execute("INSERT INTO prosstat (map, g_mode, players, time) VALUES(%s, %s, %s, %s)",
                    (current_map, game_mode, players, mos_time))
-    print("The entry was successfully added to DB")
+    print(f"The entry was successfully added to DB at {str(mos_time)[:19]}")
     conn.commit()
     cursor.close()
     conn.close()
