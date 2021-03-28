@@ -45,7 +45,7 @@ async def get_stats():
         d = str(row[3]).strip()[:19]
     cursor.close()
     conn.close()
-    if a:
+    if a and int(c) > 20:
         send_message = ('------------------------\n'
                         f'Time: {d}. \n'                        
                         f'Map: {a}. \n'
