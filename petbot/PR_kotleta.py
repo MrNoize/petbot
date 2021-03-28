@@ -30,7 +30,7 @@ client = discord.Client()
 bot.remove_command('help')
 
 
-async def get_stats():
+async def get_stats(manualy=False):
     await auto_refresh()
     conn = psycopg2.connect(dbname=db_config['dbname'], user=db_config['user'],
                             password=db_config['password'], host='localhost')
@@ -45,7 +45,7 @@ async def get_stats():
         d = str(row[3]).strip()[:19]
     cursor.close()
     conn.close()
-    if a and int(c) > 20:
+    if a and int(c) > 20 or manualy:
         send_message = ('------------------------\n'
                         f'Time: {d}. \n'                        
                         f'Map: {a}. \n'
@@ -98,7 +98,7 @@ async def stats_refresh():
 @bot.command(pass_context=True)
 async def stats(ctx):
     await ctx.message.delete()
-    await get_stats()
+    await get_stats(manualy=True)
 
 
 bot.run(TOKEN)
