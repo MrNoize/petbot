@@ -8,7 +8,7 @@ import os
 def loadConfig(config_name, params=[]):
     import configparser
     configs = configparser.ConfigParser()
-    configs.read('../config.ini')
+    configs.read('../configs/config.ini')
     output = {}
 
     for param in params:
