@@ -55,7 +55,7 @@ else:
 
     # output to DB
     conn = psycopg2.connect(dbname=db_config['dbname'], user=db_config['user'],
-                            password=db_config['password'], host='localhost')
+                            password=db_config['password'], host="db")
     cursor = conn.cursor()
 
     cursor.execute("INSERT INTO prosstat (map, g_mode, players, time) VALUES(%s, %s, %s, %s)",
