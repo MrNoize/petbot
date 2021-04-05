@@ -2,6 +2,8 @@ import discord
 import psycopg2
 from discord.ext import commands, tasks
 import os
+import pytz
+
 # FIRKA was here.
 
 
@@ -33,7 +35,7 @@ bot.remove_command('help')
 async def get_stats(manualy=False):
     await auto_refresh()
     conn = psycopg2.connect(dbname=db_config['dbname'], user=db_config['user'],
-                            password=db_config['password'], host="db")
+                            password=db_config['password'], host='db')
     cursor = conn.cursor()
     cursor.execute("SELECT map, g_mode, players, time FROM prosstat ORDER BY id DESC LIMIT 1")
     print("Mapstats successfully readen from DB")
@@ -42,7 +44,7 @@ async def get_stats(manualy=False):
         a = str(row[0]).strip()
         b = str(row[1]).strip()
         c = str(row[2]).strip()
-        d = str(row[3]).strip()[:19]
+        d = str(row[3].astimezone(pytz.timezone('Europe/Moscow'))).strip()[:19]
     cursor.close()
     conn.close()
     if a and int(c) > 20 or manualy:
