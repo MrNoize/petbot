@@ -1,0 +1,27 @@
+version: "3"
+volumes: 
+  pgdata: {}
+services:
+  petbot:
+    build: bot/
+    restart: always
+    environment:
+      TZ: "Europe/Moscow"
+    networks: 
+      - default
+
+
+
+  db:
+    image: postgres
+    restart: always
+    ports: 
+      - 5432:5432
+    environment:
+      TZ: 'GMT+3'
+      PGTZ: 'GMT+3'
+      POSTGRES_USER: pr_kotleta
+      POSTGRES_PASSWORD: 88778899
+      POSTGRES_DB: pros_maps
+    volumes: 
+      - pgdata:/var/lib/postgresql/data
