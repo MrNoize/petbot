@@ -22,7 +22,7 @@ def loadConfig(config_name, params=[]):
     return output
 
 
-db_config = loadConfig("database", ["dbname", "user", "password", "table_name"])
+db_config = loadConfig("database", ["dbname", "user", "password", "table_name", "host"])
 
 URL_TEMPLATE = "http://reality.otstrel.ru/monitoring_1.php"
 
