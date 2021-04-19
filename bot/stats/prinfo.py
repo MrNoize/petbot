@@ -64,7 +64,7 @@ else:
 
     try:
         conn = psycopg2.connect(dbname=db_config['dbname'], user=db_config['user'],
-                                password=db_config['password'])
+                                password=db_config['password'], host=db_config['host'])
         cursor = conn.cursor()
         cursor.execute('SAVEPOINT exception1')
         insert_to_db()
