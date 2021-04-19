@@ -1,10 +1,9 @@
 import discord
 import psycopg2
+from psycopg2 import sql
 from discord.ext import commands, tasks
 import os
 import pytz
-
-# FIRKA was here.
 
 
 def loadConfig(config_name, params=[]):
@@ -23,7 +22,7 @@ def loadConfig(config_name, params=[]):
 
 
 bot_config = loadConfig("bot", ["TOKEN", "GUILD", "CHANNEL", "CHECK_DELAY", "BOT_CHANNEL"])
-db_config = loadConfig("database", ["dbname", "user", "password"])
+db_config = loadConfig("database", ["dbname", "table_name", "user", "password", "host"])
 TOKEN = bot_config['TOKEN']
 GUILD = os.getenv(bot_config['GUILD'])
 bot = commands.Bot(command_prefix='!')
@@ -34,25 +33,28 @@ bot.remove_command('help')
 
 async def get_stats(manualy=False):
     await auto_refresh()
+
     conn = psycopg2.connect(dbname=db_config['dbname'], user=db_config['user'],
-                            password=db_config['password'], host='db')
+                            password=db_config['password'], host=db_config['host'])
     cursor = conn.cursor()
-    cursor.execute("SELECT map, g_mode, players, time FROM prosstat ORDER BY id DESC LIMIT 1")
+    cursor.execute(
+        sql.SQL("SELECT map, g_mode, players, time FROM {} ORDER BY id DESC LIMIT 1")
+        .format(sql.Identifier(db_config['table_name'])))
     print("Mapstats successfully readen from DB")
     rows = cursor.fetchall()
     for row in rows:
-        a = str(row[0]).strip()
-        b = str(row[1]).strip()
-        c = str(row[2]).strip()
-        d = str(row[3].astimezone(pytz.timezone('Europe/Moscow'))).strip()[:19]
+        map_name = str(row[0]).strip()
+        game_mode = str(row[1]).strip()
+        players_online = str(row[2]).strip()
+        time = str(row[3].astimezone(pytz.timezone('Europe/Moscow'))).strip()[:19]
     cursor.close()
     conn.close()
-    if a and int(c) > 20 or manualy:
+    if int(players_online) > 20 or manualy:
         send_message = ('------------------------\n'
-                        f'Time: {d}. \n'                        
-                        f'Map: {a}. \n'
-                        f'Game mode: {b}. \n'
-                        f'Players online: {c} \n'
+                        f'Time: {time}. \n'                        
+                        f'Map: {map_name}. \n'
+                        f'Game mode: {game_mode}. \n'
+                        f'Players online: {players_online} \n'
                         '------------------------')
         await bot.get_channel(int(bot_config['CHANNEL'])).send(send_message)
 
