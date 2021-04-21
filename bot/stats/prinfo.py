@@ -86,6 +86,8 @@ else:
         else:
             print(f"Unknown exception. Resolve it fast as you can. Code is {e.pgcode}")
             cursor.execute('RELEASE SAVEPOINT exception1')
+            cursor.close()
+            conn.close()
             exit(1)
     else:
         print(f"The entry was successfully added to DB at {str(mos_time)[:19]}")
