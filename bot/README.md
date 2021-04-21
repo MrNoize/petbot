@@ -24,3 +24,5 @@ user =
 
 password = 
 
+host = 
+
