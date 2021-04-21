@@ -44,17 +44,14 @@ try:
     players_raw = filtered_block[4].get_text()
     game_mode_raw = filtered_block[5].get_text()
     current_map_raw = map_html[2].get_text()
-    # players_raw to normal
+
     temp = re.findall(r'\d+', players_raw)
     res = list(map(int, temp))
     players = res[0]
-
-    # game_mode_raw to normal
     temp = re.compile('(\s*)gametype:(\s*)')
     game_mode = temp.sub('', game_mode_raw)[:-1]
-
-    # current_map_raw to normal
     current_map = current_map_raw[2:]
+
 except ConnectionRefusedError:
     print("No connection")
 except Exception:
