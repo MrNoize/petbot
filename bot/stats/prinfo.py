@@ -7,7 +7,7 @@ from datetime import datetime
 import pytz
 
 
-def loadConfig(config_name, params=[]):
+def load_config(config_name, params=[]):
     import configparser
     configs = configparser.ConfigParser()
     configs.read('../configs/config.ini')
@@ -22,7 +22,7 @@ def loadConfig(config_name, params=[]):
     return output
 
 
-db_config = loadConfig("database", ["dbname", "user", "password", "table_name", "host"])
+db_config = load_config("database", ["dbname", "user", "password", "table_name", "host"])
 
 URL_TEMPLATE = "http://reality.otstrel.ru/monitoring_1.php"
 
@@ -32,6 +32,7 @@ def insert_to_db():
         sql.SQL("INSERT INTO {} (map, g_mode, players, time) VALUES(%s, %s, %s, %s)")
         .format(sql.Identifier(db_config['table_name'])),
         (current_map, game_mode, players, mos_time))
+
 
 try:
     r = requests.get(URL_TEMPLATE)

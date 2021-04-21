@@ -6,7 +6,7 @@ import os
 import pytz
 
 
-def loadConfig(config_name, params=[]):
+def load_config(config_name, params=[]):
     import configparser
     configs = configparser.ConfigParser()
     configs.read('../configs/config.ini')
@@ -21,8 +21,8 @@ def loadConfig(config_name, params=[]):
     return output
 
 
-bot_config = loadConfig("bot", ["TOKEN", "GUILD", "CHANNEL", "CHECK_DELAY", "BOT_CHANNEL"])
-db_config = loadConfig("database", ["dbname", "table_name", "user", "password", "host"])
+bot_config = load_config("bot", ["TOKEN", "GUILD", "CHANNEL", "CHECK_DELAY", "BOT_CHANNEL"])
+db_config = load_config("database", ["dbname", "table_name", "user", "password", "host"])
 TOKEN = bot_config['TOKEN']
 GUILD = os.getenv(bot_config['GUILD'])
 bot = commands.Bot(command_prefix='!')
@@ -73,7 +73,7 @@ async def on_ready():
 async def on_message(message):
     if message.author == bot.user:
         return
-    if str(message.channel) == str(bot_config['BOT_CHANNEL']):
+    if str(message.channel.id) == str(bot_config['CHANNEL']):
         if not message.content.startswith("!"):
             await message.delete()
             return
