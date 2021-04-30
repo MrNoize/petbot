@@ -2,8 +2,9 @@ import discord
 import psycopg2
 from psycopg2 import sql
 from discord.ext import commands, tasks
-import os
+import os, sys
 import pytz
+import pickle
 
 
 def load_config(config_name, params=[]):
@@ -63,6 +64,19 @@ async def auto_refresh():
     os.system('python ../stats/prinfo.py')
 
 
+async def is_online(nickname: str):
+    os.system(f'python ../stats/pstats.py {nickname}')
+    with open('../temp/data_to_bot', 'rb') as data_from_sctipt:
+        response = pickle.load(data_from_sctipt)
+    message_to_sent = "I've got next result:\n"
+    if isinstance(response, list):
+        for player in response:
+            message_to_sent = message_to_sent + f"""Player: {player['Player']} \nOn server: {player['Server']} \n"""
+    elif isinstance(response, str):
+        message_to_sent = response
+    return message_to_sent
+
+
 @bot.event
 async def on_ready():
     stats_refresh.start()
@@ -97,6 +111,12 @@ async def stats_refresh():
 async def stats(ctx):
     await ctx.message.delete()
     await get_stats(manualy=True)
+
+
+@bot.command(pass_context=True)
+async def o(ctx, message=""):
+    await ctx.message.delete()
+    await ctx.message.author.send(await is_online(message))
 
 
 bot.run(TOKEN)
