@@ -2,7 +2,7 @@ import requests
 import re
 import psycopg2
 from psycopg2 import sql
-from bs4 import BeautifulSoup as bs
+from bs4 import BeautifulSoup as Bs
 from datetime import datetime
 import pytz
 
@@ -36,7 +36,7 @@ def insert_to_db():
 
 try:
     r = requests.get(URL_TEMPLATE)
-    soup = bs(r.text, "html.parser")
+    soup = Bs(r.text, "html.parser")
     info_block = soup.find_all('table', class_='borderAround')
     filtered_block = info_block[0].find_all('tr', class_='borderAround')
     map_block = soup.find_all('td', width='40%')

@@ -5,6 +5,7 @@ from discord.ext import commands, tasks
 import os, sys
 import pytz
 import pickle
+import re
 
 
 def load_config(config_name, params=[]):
@@ -65,7 +66,7 @@ async def auto_refresh():
 
 
 async def is_online(nickname: str):
-    os.system(f'python ../stats/pstats.py {nickname}')
+    os.system(f'python ../stats/pstats.py online {nickname}')
     with open('../temp/data_to_bot', 'rb') as data_from_sctipt:
         response = pickle.load(data_from_sctipt)
     message_to_sent = "I've got next result:\n"
@@ -75,6 +76,16 @@ async def is_online(nickname: str):
     elif isinstance(response, str):
         message_to_sent = response
     return message_to_sent
+
+
+async def p_stats(pid: int):
+    if isinstance(pid, int):
+        os.system(f'python ../stats/pstats.py stats {pid}')
+        with open('../temp/data_to_bot', 'rb') as data_from_sctipt:
+            message_to_sent = pickle.load(data_from_sctipt)
+        return message_to_sent
+    else:
+        return "ID should be an integer"
 
 
 @bot.event
@@ -118,5 +129,14 @@ async def o(ctx, message=""):
     await ctx.message.delete()
     await ctx.message.author.send(await is_online(message))
 
+
+@bot.command(pass_context=True)
+async def s(ctx, message=""):
+    await ctx.message.delete()
+    pid = re.findall(r"[\d]+", message)
+    if not pid:
+        await ctx.message.author.send("You should give me ID")
+    else:
+        await ctx.message.author.send(await p_stats(int(pid[0])))
 
 bot.run(TOKEN)
