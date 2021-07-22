@@ -1,10 +1,11 @@
-import requests
-import re
 import psycopg2
 from psycopg2 import sql
-from bs4 import BeautifulSoup as Bs
 from datetime import datetime
 import pytz
+import json
+import requests
+
+STATS_URL = "https://servers.realitymod.com/api/ServerInfo"
 
 
 def load_config(config_name, params=[]):
@@ -27,45 +28,32 @@ db_config = load_config("database", ["dbname", "user", "password", "table_name",
 URL_TEMPLATE = "http://reality.otstrel.ru/monitoring_1.php"
 
 
-def insert_to_db():
+def get_json(url):
+    response = requests.get(url)
+    if response.text == 'API calls quota exceeded! maximum admitted 2 per 60s.':
+        with open('../temp/serverinfo.json', 'r', encoding='utf-8') as saved_json:
+            raw_json = json.load(saved_json)
+    else:
+        raw_json = json.loads(response.text)
+        with open('../temp/serverinfo.json', 'w', encoding='utf-8') as saved_json:
+            json.dump(raw_json, saved_json)
+    return raw_json
+
+
+def insert_to_db(cursor, current_map, game_mode, players, mos_time):
     cursor.execute(
         sql.SQL("INSERT INTO {} (map, g_mode, players, time) VALUES(%s, %s, %s, %s)")
         .format(sql.Identifier(db_config['table_name'])),
         (current_map, game_mode, players, mos_time))
 
 
-try:
-    r = requests.get(URL_TEMPLATE)
-    soup = Bs(r.text, "html.parser")
-    info_block = soup.find_all('table', class_='borderAround')
-    filtered_block = info_block[0].find_all('tr', class_='borderAround')
-    map_block = soup.find_all('td', width='40%')
-    map_html = map_block[0].find_all('font', class_='smallFont')
-    players_raw = filtered_block[4].get_text()
-    game_mode_raw = filtered_block[5].get_text()
-    current_map_raw = map_html[2].get_text()
-
-    temp = re.findall(r'\d+', players_raw)
-    res = list(map(int, temp))
-    players = res[0]
-    temp = re.compile('(\s*)gametype:(\s*)')
-    game_mode = temp.sub('', game_mode_raw)[:-1]
-    current_map = current_map_raw[2:]
-
-except ConnectionRefusedError:
-    print("No connection")
-except Exception:
-    print("Something went wrong")
-else:
-    print("Server available")
-    mos_time = (datetime.now(pytz.timezone('Europe/Moscow')))
-
+def db_action(current_map, game_mode, players, mos_time):
     try:
         conn = psycopg2.connect(dbname=db_config['dbname'], user=db_config['user'],
                                 password=db_config['password'], host=db_config['host'])
         cursor = conn.cursor()
         cursor.execute('SAVEPOINT exception1')
-        insert_to_db()
+        insert_to_db(cursor, current_map, game_mode, players, mos_time)
     except psycopg2.ProgrammingError as e:
         cursor.execute('ROLLBACK TO SAVEPOINT exception1')
         if e.pgcode == "42P01":
@@ -78,11 +66,11 @@ else:
                 g_mode character(20) NOT NULL,
                 players integer NOT NULL,
                 time timestamp with time zone NOT NULL);''')
-                .format(sql.Identifier(db_config['table_name']))
+                    .format(sql.Identifier(db_config['table_name']))
             )
             print(f"Successfully created {db_config['table_name']}")
             conn.commit()
-            insert_to_db
+            insert_to_db(cursor, current_map, game_mode, players, mos_time)
         else:
             print(f"Unknown exception. Resolve it fast as you can. Code is {e.pgcode}")
             cursor.execute('RELEASE SAVEPOINT exception1')
@@ -94,3 +82,26 @@ else:
         conn.commit()
         cursor.close()
         conn.close()
+
+
+server_info = get_json(STATS_URL)
+def get_info():
+    for server in server_info['servers']:
+        if server['serverId'] == "8b946994d855bc356160a0ddf700bd29a72e7f60":
+            players = server['properties']['numplayers']
+            game_mode = server['properties']['gametype']
+            current_map = server['properties']['mapname']
+            print("Server available")
+            mos_time = (datetime.now(pytz.timezone('Europe/Moscow')))
+            db_action(current_map, game_mode, players, mos_time)
+            return 1
+        else:
+            continue
+    return 0
+
+
+if get_info() == 0:
+    print("PROS unavailable")
+    db_action(current_map = "PROS_DOWN", game_mode = "-", players = "0", mos_time = (datetime.now(pytz.timezone('Europe/Moscow'))))
+else:
+    print("Everything is ok")

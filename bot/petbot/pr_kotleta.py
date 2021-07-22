@@ -192,7 +192,7 @@ async def req(ctx):
     mapname = ctx.message.content.strip('!req ')
     search_result = []
     for item in maplist:
-        if mapname.lower() in item and not mapname == "":
+        if mapname.lower() in item and not mapname == "" and len(mapname) > 3:
             search_result.append(item)
     if len(search_result) == 1:
         add_to_mapreq_json({"Player": ctx.message.author.id, "Nick": str(ctx.message.author.name), "Map": search_result[0], "Time": str(datetime.date(datetime.now(pytz.timezone('Europe/Moscow'))))})
