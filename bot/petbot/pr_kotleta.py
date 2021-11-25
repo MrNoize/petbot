@@ -66,8 +66,9 @@ async def check_mapreq(current_map):
 intents = discord.Intents.default()
 intents.members = True
 
-bot_config = load_config("bot", ["TOKEN", "GUILD", "CHANNEL", "CHECK_DELAY", "BOT_CHANNEL"])
+bot_config = load_config("bot", ["TOKEN", "GUILD", "CHANNEL", "CHECK_DELAY", "BOT_CHANNEL", "BOT_MODERATOR"])
 db_config = load_config("database", ["dbname", "table_name", "user", "password", "host"])
+
 TOKEN = bot_config['TOKEN']
 GUILD = os.getenv(bot_config['GUILD'])
 bot = commands.Bot(command_prefix='!', intents=intents)
@@ -144,10 +145,15 @@ async def on_ready():
 async def on_message(message):
     if message.author == bot.user:
         return
+
+
     if str(message.channel.id) == str(bot_config['CHANNEL']):
         if not message.content.startswith("!"):
-            await message.delete()
-            return
+            if str(message.author) == str(bot_config['BOT_MODERATOR']):
+                return
+            else:
+                await message.delete()
+                return
 
         elif not message.content.split()[0][1:] in bot.all_commands:
             await message.delete()

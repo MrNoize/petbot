@@ -2,7 +2,6 @@ import json
 import pickle
 import sys
 import requests
-from bs4 import BeautifulSoup as Bs
 
 
 STATS_URL = "https://servers.realitymod.com/api/ServerInfo"
