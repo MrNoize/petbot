@@ -2,6 +2,7 @@ import json
 import pickle
 import sys
 import requests
+import bs4 as bs
 
 
 STATS_URL = "https://servers.realitymod.com/api/ServerInfo"
@@ -60,7 +61,7 @@ def parse_stats_by_id(pid: int):
     url_to_pstats = f"https://prstats.tk/player/{pid}/make_api"
     response = requests.get(url_to_pstats)
     if response.status_code == 200:
-        soup = Bs(response.text, "html.parser")
+        soup = bs(response.text, "html.parser")
         name_block = soup.find_all('div', class_='col-md-4 col-sm-12 col-xs-12 profile-text')
         info_block = soup.find_all('div', class_='col-md-2 col-sm-6 col-xs-6 profile-text mt mb centered')
         data_list = info_block[0].get_text().strip().split("\n")

@@ -1,6 +1,4 @@
 import discord
-import psycopg2
-from psycopg2 import sql
 from discord.ext import commands, tasks
 from datetime import datetime
 import os
@@ -8,6 +6,10 @@ import pytz
 import pickle
 import json
 import re
+import requests
+
+
+STATS_URL = "https://servers.realitymod.com/api/ServerInfo"
 
 
 def load_config(config_name, params=None):
@@ -27,35 +29,63 @@ def load_config(config_name, params=None):
     return output
 
 
+def get_json(url):
+    response = requests.get(url)
+    if response.text == 'API calls quota exceeded! maximum admitted 2 per 60s.':
+        with open('../temp/serverinfo.json', 'r', encoding='utf-8') as saved_json:
+            raw_json = json.load(saved_json)
+    else:
+        raw_json = json.loads(response.text)
+        with open('../temp/serverinfo.json', 'w', encoding='utf-8') as saved_json:
+            json.dump(raw_json, saved_json)
+    return raw_json
+
+
+def get_info():
+    server_info = get_json(STATS_URL)
+    players = 0
+    game_mode = "PROS DOWN"
+    current_map = "PROS DOWN"
+    mos_time = str(datetime.now(pytz.timezone('Europe/Moscow')))[0:16]
+    for server in server_info['servers']:
+        if server['serverId'] == " 8b946994d855bc356160a0ddf700bd29a72e7f60":
+            players = server['properties']['numplayers']
+            game_mode = server['properties']['gametype']
+            current_map = server['properties']['mapname']
+            print("Server available")
+            return [players, game_mode, current_map, mos_time]
+        else:
+            continue
+    print("PROS unavailable")
+    return [players, game_mode, current_map, mos_time]
+
+
 def read_maplist():
     with open("../temp/map_requests.json", "r", encoding="utf-8") as map_requests_json_read:
-        return json.load(map_requests_json_read)[0]
+        return json.load(map_requests_json_read)
 
 
 def add_to_mapreq_json(data):
-    with open("../temp/map_requests.json", "r", encoding="utf-8") as map_requests_json_read:
-        exist_data = json.load(map_requests_json_read)
+    exist_data = read_maplist()
     with open("../temp/map_requests.json", "w", encoding="utf-8") as map_requests_json_write:
-        readen_dict = exist_data[1]['requests']
-        for request in exist_data[1]['requests']:
+        read_dict = exist_data[1]['requests']
+        for request in read_dict:
             if data['Nick'] == request['Nick']:
-                readen_dict.remove(request)
-        readen_dict.append(data)
+                read_dict.remove(request)
+        read_dict.append(data)
         json.dump(exist_data, map_requests_json_write)
 
 
 def delete_from_mapreq_json(data):
-    with open("../temp/map_requests.json", "r", encoding="utf-8") as map_requests_json_read:
-        exist_data = json.load(map_requests_json_read)
+    exist_data = read_maplist()
     with open("../temp/map_requests.json", "w", encoding="utf-8") as map_requests_json_write:
-        readen_dict = exist_data[1]['requests']
-        readen_dict.remove(data)
+        read_dict = exist_data[1]['requests']
+        read_dict.remove(data)
         json.dump(exist_data, map_requests_json_write)
 
 
 async def check_mapreq(current_map):
-    with open("../temp/map_requests.json", "r", encoding="utf-8") as map_requests_json_read:
-        requests_list = json.load(map_requests_json_read)[1]['requests']
+    requests_list = read_maplist()[1]['requests']
     for request in requests_list:
         if current_map.lower() == request['Map']:
             await bot.get_user(int(request['Player'])).send(f"You've requested map {request['Map']}.\n"
@@ -66,49 +96,36 @@ async def check_mapreq(current_map):
 intents = discord.Intents.default()
 intents.members = True
 
-bot_config = load_config("bot", ["TOKEN", "GUILD", "CHANNEL", "CHECK_DELAY", "BOT_CHANNEL", "BOT_MODERATOR"])
-db_config = load_config("database", ["dbname", "table_name", "user", "password", "host"])
+bot_config = load_config("bot", ["TOKEN", "GUILD", "CHANNEL", "CHECK_DELAY", "BOT_MODERATOR"])
 
 TOKEN = bot_config['TOKEN']
-GUILD = os.getenv(bot_config['GUILD'])
 bot = commands.Bot(command_prefix='!', intents=intents)
 client = discord.Client(intents=intents)
-maplist = read_maplist()
+maplist = read_maplist()[0]
 
 bot.remove_command('help')
 
 
-async def get_stats(manualy=False):
-    await auto_refresh()
-
-    conn = psycopg2.connect(dbname=db_config['dbname'], user=db_config['user'],
-                            password=db_config['password'], host=db_config['host'])
-    cursor = conn.cursor()
-    cursor.execute(
-        sql.SQL("SELECT map, g_mode, players, time FROM {} ORDER BY id DESC LIMIT 1")
-            .format(sql.Identifier(db_config['table_name'])))
-    print("Mapstats successfully readen from DB")
-    rows = cursor.fetchall()
-    for row in rows:
-        map_name = str(row[0]).strip()
-        game_mode = str(row[1]).strip()
-        players_online = str(row[2]).strip()
-        time = str(row[3].astimezone(pytz.timezone('Europe/Moscow'))).strip()[:19]
-    cursor.close()
-    conn.close()
-    if int(players_online) > 20 or manualy:
+async def get_stats(manually=False):
+    data = get_info()
+    players_online = data[0]
+    game_mode = data[1]
+    map_name = data[2]
+    time = data[3]
+    if int(players_online) > 20 or manually:
         send_message = ('------------------------\n'
                         f'Time: {time}. \n'
                         f'Map: {map_name}. \n'
                         f'Game mode: {game_mode}. \n'
                         f'Players online: {players_online} \n'
                         '------------------------')
+        print(send_message)
         await bot.get_channel(int(bot_config['CHANNEL'])).send(send_message)
     await check_mapreq(map_name)
 
 
 async def auto_refresh():
-    os.system('python ../stats/prinfo.py')
+    await get_stats(manually=False)
 
 
 async def is_online(nickname: str):
@@ -118,8 +135,8 @@ async def is_online(nickname: str):
     message_to_sent = "I've got next result:\n"
     if isinstance(response, list):
         for player in response:
-            message_to_sent = message_to_sent + f"""Player: {player['Player']} \n
-                                                On server: {player['Server']} \n"""
+            message_to_sent = message_to_sent + f"""\nPlayer: {player['Player']} \n
+                                                      On server: {player['Server']} """
     elif isinstance(response, str):
         message_to_sent = response
     return message_to_sent
@@ -146,7 +163,6 @@ async def on_message(message):
     if message.author == bot.user:
         return
 
-
     if str(message.channel.id) == str(bot_config['CHANNEL']):
         if not message.content.startswith("!"):
             if str(message.author) == str(bot_config['BOT_MODERATOR']):
@@ -161,8 +177,9 @@ async def on_message(message):
 
         try:
             await bot.process_commands(message)
-        except:
             await message.delete()
+        except:
+            return
 
 
 @tasks.loop(minutes=int(bot_config['CHECK_DELAY']))
@@ -172,19 +189,16 @@ async def stats_refresh():
 
 @bot.command(pass_context=True)
 async def stats(ctx):
-    await ctx.message.delete()
-    await get_stats(manualy=True)
+    await get_stats(manually=True)
 
 
 @bot.command(pass_context=True)
 async def o(ctx, message=""):
-    await ctx.message.delete()
     await ctx.message.author.send(await is_online(message))
 
 
 @bot.command(pass_context=True)
 async def s(ctx, message=""):
-    await ctx.message.delete()
     pid = re.findall(r"[\d]+", message)
     if not pid:
         await ctx.message.author.send("You should give me ID")
@@ -194,7 +208,6 @@ async def s(ctx, message=""):
 
 @bot.command(pass_context=True)
 async def req(ctx):
-    await ctx.message.delete()
     mapname = ctx.message.content.strip('!req ')
     search_result = []
     for item in maplist:
