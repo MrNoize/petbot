@@ -48,7 +48,7 @@ def get_info():
     current_map = "PROS DOWN"
     mos_time = str(datetime.now(pytz.timezone('Europe/Moscow')))[0:16]
     for server in server_info['servers']:
-        if server['serverId'] == " 8b946994d855bc356160a0ddf700bd29a72e7f60":
+        if server['serverId'] == "8b946994d855bc356160a0ddf700bd29a72e7f60":
             players = server['properties']['numplayers']
             game_mode = server['properties']['gametype']
             current_map = server['properties']['mapname']
